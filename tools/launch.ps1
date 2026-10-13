@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 #  华遗通商 · 一键启动（本地服务 + Cloudflare 公网隧道）
 #  由「启动.bat」调用
 #
@@ -96,4 +96,75 @@ Write-Host '      把它发给评委即可，自带 HTTPS。' -ForegroundColor Y
 Write-Host '      两个窗口都保持开启；关闭本窗口链接即失效。' -ForegroundColor DarkGray
 Write-Host ''
 
-& $cf tunnel --url http://localhost:3001
+# cloudflared 把日志写到 stderr。直接调用时 PowerShell 会把每行包装成
+# NativeCommandError（满屏红字），容易让人误以为启动失败。
+# 这里改为重定向到临时文件再原样读出：
+#   - 不再出现红色报错
+#   - 输出仍然是实时的
+#   - 用 .NET 读取避免中文日志被 ANSI 解码
+$logFile = Join-Path $env:TEMP ("huayi-tunnel-{0}.log" -f (Get-Date -Format 'yyyyMMddHHmmss'))
+$proc = Start-Process -FilePath $cf `
+    -ArgumentList 'tunnel', '--url', 'http://localhost:3001' `
+    -NoNewWindow -PassThru `
+    -RedirectStandardOutput $logFile `
+    -RedirectStandardError "$logFile.err"
+
+$shown = 0
+try {
+    while (-not $proc.HasExited) {
+        Start-Sleep -Milliseconds 400
+        # 先读 stderr（cloudflared 的日志都在这里），再读 stdout
+        foreach ($f in @("$logFile.err", $logFile)) {
+            if (-not (Test-Path $f)) { continue }
+
+            # 关键：cloudflared 正在写这个文件，必须用 FileShare.ReadWrite 打开。
+            # 否则 ReadAllLines 会独占文件触发 IOException，
+            # 异常会让本循环直接退出，隧道被立刻关闭。
+            $text = ''
+            try {
+                $fs = [System.IO.File]::Open($f,
+                        [System.IO.FileMode]::Open,
+                        [System.IO.FileAccess]::Read,
+                        [System.IO.FileShare]::ReadWrite)
+                try {
+                    $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
+                    $text = $sr.ReadToEnd()
+                    $sr.Close()
+                } finally {
+                    $fs.Close()
+                }
+            } catch {
+                continue   # 本次读不到就跳过，下一轮再试
+            }
+
+            if (-not $text) { continue }
+            $lines = $text -split "`r?`n"
+            for ($i = $shown; $i -lt $lines.Count; $i++) {
+                $line = $lines[$i]
+                if ([string]::IsNullOrWhiteSpace($line)) { continue }
+                # 只高亮关键行，其余保持普通颜色
+                if ($line -match 'trycloudflare\.com') {
+                    Write-Host $line -ForegroundColor Green
+                } elseif ($line -match '\bERR\b|failed|error') {
+                    Write-Host $line -ForegroundColor DarkYellow
+                } else {
+                    Write-Host $line -ForegroundColor DarkGray
+                }
+            }
+            $shown = $lines.Count
+        }
+    }
+} finally {
+    # 脚本被 Ctrl+C 或窗口关闭时，顺手结束 cloudflared，避免留下孤儿进程
+    if ($proc -and -not $proc.HasExited) {
+        try { $proc.Kill() } catch { }
+    }
+    Remove-Item $logFile, "$logFile.err" -ErrorAction SilentlyContinue
+}
+
+Write-Host ''
+Write-Host '隧道已结束。若要重新获取公网链接，再次运行本脚本即可。' -ForegroundColor Yellow
+
+Write-Host ''
+Write-Host '隧道已结束。若要重新获取公网链接，再次运行本脚本即可。' -ForegroundColor Yellow
+
