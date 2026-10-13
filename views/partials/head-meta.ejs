@@ -25,8 +25,24 @@
   const givenBase = typeof siteUrl !== 'undefined' ? siteUrl : null;
 
   const brandName = T('site.name');
-  const pageTitle = givenTitle || brandName;
-  const fullTitle = pageTitle.indexOf(brandName) === 0 ? pageTitle : pageTitle + ' - ' + brandName;
+
+  // 标题解析：
+  //   - 页面传了 metaTitle（商品/文章页）-> 补上品牌后缀，已含品牌则不重复
+  //   - 没传 -> 复用本页 <title> 已渲染好的完整标题
+  //     （partial 紧跟在 <title> 之后 include，此时已能读到它的内容）
+  // 这样 og:title 与页面标题始终一致，社交卡片不会只显示一个光秃秃的品牌名。
+  const pageTitleRaw = (typeof pageTitleFromTag === 'undefined' || !pageTitleFromTag)
+    ? ''
+    : String(pageTitleFromTag).trim();
+
+  let fullTitle;
+  if (givenTitle) {
+    const t = String(givenTitle);
+    fullTitle = t.indexOf(brandName) === 0 ? t : t + ' - ' + brandName;
+  } else {
+    fullTitle = pageTitleRaw || brandName;
+  }
+
   const description = givenDesc || T('site.description');
   const robotsValue = givenRobots || 'index, follow';
   const typeValue = givenType || 'website';

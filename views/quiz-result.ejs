@@ -25,7 +25,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= t('quiz.resultTitle') %> - <%= t('site.name') %></title>
-  <%- include('partials/head-meta') %>
+  <%
+    /* 取本页已渲染的 <title> 文本，供 head-meta 生成 og:title。
+       注意：__output 里的标题已经过 EJS 转义（& 变成 &amp;），
+       这里先解码回原始文本，再由 head-meta 统一转义一次，避免双重转义。 */
+    const pageTitleFromTag = (() => {
+      const html = typeof __output === 'string' ? __output : '';
+      const m = html.match(/<title>([\s\S]*?)<\/title>/);
+      if (!m) return '';
+      return m[1]
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&');
+    })();
+  %>
+  <%- include('partials/head-meta', { pageTitleFromTag: pageTitleFromTag }) %>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/quiz.css">
