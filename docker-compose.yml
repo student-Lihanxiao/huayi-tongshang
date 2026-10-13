@@ -1,0 +1,51 @@
+# ============================================================
+#  华遗通商 · 容器编排
+#  用途：本机或 VPS 一键起服务，并让用户/订单数据持久化
+#
+#  启动：docker compose up -d --build
+#  查看日志：docker compose logs -f
+#  停止：docker compose down
+#  停止并清空数据：docker compose down -v
+# ============================================================
+
+services:
+  app:
+    build: .
+    image: huayi-tongshang:latest
+    container_name: huayi-tongshang
+    restart: unless-stopped
+
+    ports:
+      - "3001:3001"
+
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # 生产环境务必改成随机字符串：
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      SESSION_SECRET: ${SESSION_SECRET:-please-change-this-in-production}
+      # 有域名后改成 https://你的域名，用于 canonical / sitemap 绝对地址
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      # 通过 HTTPS 访问时设为 true；纯 http 演示请设为 false，否则登录会失效
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      DATA_DIR: /data
+
+    volumes:
+      # 关键：数据目录挂出来，容器重建后用户与订单不会丢
+      - huayi-data:/data
+
+    # 不指定 user：入口脚本需要 root 权限修正挂载卷属主，随后自行降权到 node
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3001/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  huayi-data:
+    driver: local

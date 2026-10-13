@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('feat.title') %> - <%= t('site.name') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <!-- Page header -->
+  <section class="features-hero">
+    <div class="container hero-inner">
+      <div class="hero-seal">華</div>
+      <h1 class="hero-brand"><%= t('site.name') %></h1>
+      <p class="hero-title"><%= t('feat.lead') %></p>
+      <div class="hero-rule"></div>
+      <div class="hero-actions">
+        <a href="/quiz/full" class="btn-chinese btn-lg">🧭 <%= t('feat.viewQuiz') %></a>
+        <a href="/products" class="btn-chinese btn-lg gold">🛍️ <%= t('feat.viewProducts') %></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key numbers -->
+  <div class="container">
+    <div class="stat-strip">
+      <div class="stat-cell">
+        <strong>9</strong>
+        <span><%= t('feat.statConstitution') %></span>
+      </div>
+      <div class="stat-cell">
+        <strong>18</strong>
+        <span><%= t('feat.statQuestions') %></span>
+      </div>
+      <div class="stat-cell">
+        <strong>5</strong>
+        <span><%= t('feat.statQuick') %></span>
+      </div>
+      <div class="stat-cell">
+        <strong>32</strong>
+        <span><%= t('feat.statProducts') %></span>
+      </div>
+      <div class="stat-cell">
+        <strong>4</strong>
+        <span><%= t('feat.statLanguages') %></span>
+      </div>
+      <div class="stat-cell">
+        <strong>200+</strong>
+        <span><%= t('feat.statTests') %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core highlights -->
+  <div class="container">
+    <h2 class="page-title"><%= t('feat.highlights') %></h2>
+    <div class="feature-grid">
+      <% [
+        { icon: '🧭', title: 'feat.h1Title', text: 'feat.h1Text' },
+        { icon: '🌿', title: 'feat.h2Title', text: 'feat.h2Text' },
+        { icon: '🌐', title: 'feat.h3Title', text: 'feat.h3Text' },
+        { icon: '🛡️', title: 'feat.h4Title', text: 'feat.h4Text' }
+      ].forEach(function (item, i) { %>
+        <article class="feature-card">
+          <span class="feature-index"><%= String(i + 1).padStart(2, '0') %></span>
+          <div class="feature-icon"><%= item.icon %></div>
+          <h3><%= t(item.title) %></h3>
+          <p><%= t(item.text) %></p>
+        </article>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Technical implementation -->
+  <div class="container">
+    <h2 class="page-title"><%= t('feat.tech') %></h2>
+    <div class="tech-table">
+      <% [
+        { label: 'feat.techStack', value: 'feat.techStackValue' },
+        { label: 'feat.techI18n', value: 'feat.techI18nValue' },
+        { label: 'feat.techSeo', value: 'feat.techSeoValue' },
+        { label: 'feat.techTest', value: 'feat.techTestValue' }
+      ].forEach(function (row) { %>
+        <div class="tech-row">
+          <div class="tech-label"><%= t(row.label) %></div>
+          <div class="tech-value"><%= t(row.value) %></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Demo walkthrough -->
+  <div class="container">
+    <h2 class="page-title"><%= t('feat.demo') %></h2>
+    <p class="text-center result-muted" style="max-width: 640px; margin: 0 auto 8px;"><%= t('feat.demoLead') %></p>
+    <ol class="demo-list">
+      <% ['1', '2', '3', '4', '5'].forEach(function (n) { %>
+        <li class="demo-item">
+          <span class="demo-num"><%= n %></span>
+          <span class="demo-text"><%= t('feat.demo' + n) %></span>
+        </li>
+      <% }); %>
+    </ol>
+
+    <div class="result-actions" style="margin-bottom: 20px;">
+      <a href="/" class="btn-chinese btn-lg"><%= t('feat.startDemo') %></a>
+    </div>
+  </div>
+
+  <p class="quiz-disclaimer"><%= t('quiz.disclaimer') %></p>
+
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "huayi-tongshang",
+  "version": "1.0.0",
+  "description": "华遗通商 - 非遗好物·本草·汉服 多语言电商平台（含中医体质测评与个性化推荐）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "verify": "node test/verify-coverage.js && node test/verify-routes.js && node test/verify-engine.js && node test/verify-flows.js && node test/verify-seo.js",
+    "verify:coverage": "node test/verify-coverage.js",
+    "verify:routes": "node test/verify-routes.js",
+    "verify:engine": "node test/verify-engine.js",
+    "verify:flows": "node test/verify-flows.js",
+    "verify:seo": "node test/verify-seo.js",
+    "gen:secret": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+    "gen:icons": "python tools/make-icons.py && python tools/make-og-cover.py"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bcrypt": "^5.1.1",
+    "chinese-days": "^0.2.0",
+    "compression": "^1.8.2",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "helmet": "^8.3.0",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

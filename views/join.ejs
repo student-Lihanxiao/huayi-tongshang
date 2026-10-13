@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('join.title') %> - <%= t('site.name') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+  <style>
+    .job-card {
+      background: white;
+      border-radius: 25px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+      border: 1px solid var(--border-green);
+      margin-bottom: 20px;
+      transition: all 0.3s;
+    }
+    .job-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px var(--shadow-green); }
+    .job-title { color: var(--primary-green); font-size: 1.3rem; margin-bottom: 10px; }
+    .job-type {
+      background: var(--light-green);
+      color: var(--primary-green);
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      display: inline-block;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container my-5">
+    <h1 class="page-title"><%= t('join.title') %></h1>
+    <div class="divider-chinese"></div>
+
+    <div class="row">
+      <div class="col-lg-8 mx-auto">
+        <div class="text-center mb-5">
+          <p style="font-size: 1.2rem; color: var(--text-dark);"><%= t('join.lead') %></p>
+          <p style="color: var(--text-light);"><%= t('join.intro') %></p>
+        </div>
+
+        <% [
+          { title: 'join.j1Title', text: 'join.j1Text', type: 'join.typeFull' },
+          { title: 'join.j2Title', text: 'join.j2Text', type: 'join.typeFull' },
+          { title: 'join.j3Title', text: 'join.j3Text', type: 'join.typeBoth' },
+          { title: 'join.j4Title', text: 'join.j4Text', type: 'join.typeFull' }
+        ].forEach(function (job) { %>
+          <div class="job-card">
+            <div>
+              <span class="job-title"><%= t(job.title) %></span>
+              <span class="job-type"><%= t(job.type) %></span>
+            </div>
+            <p style="color: var(--text-light); margin: 15px 0;"><%= t(job.text) %></p>
+            <div style="color: var(--accent-gold);"><%= t('join.location') %></div>
+          </div>
+        <% }); %>
+
+        <div class="text-center mt-5">
+          <p style="color: var(--text-light);"><%= t('join.applyTitle') %></p>
+          <p style="color: var(--text-light);"><%= t('join.applyHint') %></p>
+          <a href="/contact" class="btn-chinese mt-3"><%= t('join.cta') %></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

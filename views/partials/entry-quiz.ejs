@@ -1,0 +1,149 @@
+<%
+  /* First-visit entry quiz modal
+     locals: steps (quiz-questions.json -> entry.steps), showEntryQuiz */
+  const localize = (obj) => (obj && (obj[lang] || obj.zh)) || '';
+%>
+<% if (typeof showEntryQuiz !== 'undefined' && showEntryQuiz) { %>
+<div class="entry-quiz-overlay" id="entryQuizOverlay" hidden>
+  <div class="entry-quiz-modal" role="dialog" aria-modal="true" aria-labelledby="entryQuizTitle">
+    <button type="button" class="entry-quiz-close" id="entryQuizClose" aria-label="close">×</button>
+
+    <div class="entry-quiz-head">
+      <span class="entry-quiz-kicker"><%= t('quiz.entryTitle') %></span>
+      <h2 id="entryQuizTitle"><%= t('quiz.entryPopupTitle') %></h2>
+      <p><%= t('quiz.entryPopupLead') %></p>
+    </div>
+
+    <form method="post" action="/quiz/entry" id="entryQuizForm">
+      <div class="entry-quiz-progress">
+        <span id="entryQuizProgressText"><%= t('quiz.entryStep', { n: 1, total: steps.length }) %></span>
+        <div class="entry-quiz-dots">
+          <% steps.forEach(function (s, i) { %>
+            <span class="entry-quiz-dot<%= i === 0 ? ' active' : '' %>"></span>
+          <% }); %>
+        </div>
+      </div>
+
+      <% steps.forEach(function (step, index) { %>
+        <div class="entry-step<%= index === 0 ? ' active' : '' %>" data-index="<%= index %>">
+          <h3 class="entry-step-question"><%= localize(step) %></h3>
+          <div class="entry-options">
+            <% step.options.forEach(function (opt) { %>
+              <label class="entry-option">
+                <input type="radio" name="<%= step.key %>" value="<%= opt.value %>">
+                <span class="entry-option-icon"><%= opt.icon || '·' %></span>
+                <span class="entry-option-text"><%= localize(opt) %></span>
+              </label>
+            <% }); %>
+          </div>
+          <p class="entry-warning" hidden><%= t('quiz.pleaseAnswer') %></p>
+        </div>
+      <% }); %>
+
+      <div class="entry-actions">
+        <button type="button" class="btn-chinese btn-sm entry-skip" id="entryQuizSkip"><%= t('quiz.entrySkip') %></button>
+        <button type="button" class="btn-chinese btn-sm" id="entryQuizPrev" disabled><%= t('quiz.prev') %></button>
+        <button type="button" class="btn-chinese btn-sm" id="entryQuizNext"><%= t('quiz.next') %></button>
+        <button type="submit" class="btn-chinese btn-sm" id="entryQuizSubmit" hidden><%= t('quiz.entryDone') %></button>
+      </div>
+      <p class="entry-hint"><%= t('quiz.entrySkipHint') %></p>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = 'dongfang_entry_quiz_done';
+  var overlay = document.getElementById('entryQuizOverlay');
+  if (!overlay) return;
+
+  // Skip returning visitors: dual check via session flag and localStorage
+  var alreadyDone = false;
+  try { alreadyDone = localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { alreadyDone = false; }
+  if (alreadyDone) return;
+
+  var steps = Array.prototype.slice.call(overlay.querySelectorAll('.entry-step'));
+  var dots = Array.prototype.slice.call(overlay.querySelectorAll('.entry-quiz-dot'));
+  var progressText = document.getElementById('entryQuizProgressText');
+  var prevBtn = document.getElementById('entryQuizPrev');
+  var nextBtn = document.getElementById('entryQuizNext');
+  var submitBtn = document.getElementById('entryQuizSubmit');
+  var form = document.getElementById('entryQuizForm');
+  var current = 0;
+
+  var STEP_TEMPLATE = <%- JSON.stringify(t('quiz.entryStep', { n: '__N__', total: '__TOTAL__' })) %>;
+
+  function markDone() {
+    try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) { /* ignore */ }
+    fetch('/entry-quiz/done', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .catch(function () { /* ignore */ });
+  }
+
+  function render() {
+    steps.forEach(function (s, i) {
+      s.classList.toggle('active', i === current);
+      s.querySelector('.entry-warning').hidden = true;
+    });
+    dots.forEach(function (d, i) { d.classList.toggle('active', i <= current); });
+
+    progressText.textContent = STEP_TEMPLATE
+      .replace('__N__', current + 1)
+      .replace('__TOTAL__', steps.length);
+
+    prevBtn.disabled = current === 0;
+    nextBtn.hidden = current === steps.length - 1;
+    submitBtn.hidden = current !== steps.length - 1;
+  }
+
+  function answered() {
+    return !!steps[current].querySelector('input[type=radio]:checked');
+  }
+
+  steps.forEach(function (step) {
+    step.addEventListener('change', function (e) {
+      if (e.target.type !== 'radio') return;
+      step.querySelectorAll('.entry-option').forEach(function (el) { el.classList.remove('picked'); });
+      var label = e.target.closest('.entry-option');
+      if (label) label.classList.add('picked');
+      step.querySelector('.entry-warning').hidden = true;
+
+      if (current < steps.length - 1) {
+        setTimeout(function () {
+          if (answered()) { current += 1; render(); }
+        }, 200);
+      }
+    });
+  });
+
+  nextBtn.addEventListener('click', function () {
+    if (!answered()) { steps[current].querySelector('.entry-warning').hidden = false; return; }
+    if (current < steps.length - 1) { current += 1; render(); }
+  });
+
+  prevBtn.addEventListener('click', function () {
+    if (current > 0) { current -= 1; render(); }
+  });
+
+  document.getElementById('entryQuizClose').addEventListener('click', function () {
+    overlay.hidden = true;
+    markDone();
+  });
+
+  document.getElementById('entryQuizSkip').addEventListener('click', function () {
+    overlay.hidden = true;
+    markDone();
+  });
+
+  form.addEventListener('submit', function () {
+    markDone();
+  });
+
+  // Slight delay before showing, so first paint is not interrupted
+  setTimeout(function () {
+    overlay.hidden = false;
+    document.body.classList.add('entry-quiz-open');
+    render();
+  }, 900);
+})();
+</script>
+<% } %>

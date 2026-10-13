@@ -1,0 +1,188 @@
+<%
+  /* Assessment result page
+     locals: mode, primary, secondary, ranked, recommendations, lifestyle, reason
+     constitution.json 的本地化字段用驼峰式（traitsEn / taglineJa），
+     这里同时兼容驼峰与下划线两种写法。 */
+  const pick = (obj, field, code) => {
+    const camel = field + code.charAt(0).toUpperCase() + code.slice(1);
+    const snake = field + '_' + code;
+    for (const key of [snake, camel]) {
+      const v = obj[key];
+      if (v && (Array.isArray(v) ? v.length : String(v).trim())) return v;
+    }
+    return null;
+  };
+  const fld = (obj, field) => pick(obj, field, lang) || pick(obj, field, 'en') || obj[field] || '';
+  const levelText = (level) => level === 'yes' ? t('quiz.yes')
+    : level === 'tendency' ? t('quiz.tendency') : t('quiz.no');
+  const levelClass = (level) => 'score-' + level;
+  const modeTitle = mode === 'full' ? t('quiz.fullTitle')
+    : mode === 'entry' ? t('quiz.entryTitle') : t('quiz.quickTitle');
+%>
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('quiz.resultTitle') %> - <%= t('site.name') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body class="quiz-page">
+  <%- include('partials/navbar') %>
+
+  <div class="container my-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/"><%= t('common.backHome') %></a></li>
+        <li class="breadcrumb-item"><a href="/quiz"><%= t('quiz.navTitle') %></a></li>
+        <li class="breadcrumb-item active"><%= t('quiz.resultTitle') %></li>
+      </ol>
+    </nav>
+
+    <section class="result-hero" style="--type-color: <%= primary.color %>;">
+      <div class="result-hero-icon"><%= primary.icon %></div>
+      <div class="result-hero-body">
+        <span class="result-hero-kicker"><%= t('quiz.primaryType') %> · <span class="result-mode"><%= modeTitle %></span></span>
+        <h1><%= loc(primary, 'name') %></h1>
+        <p class="result-hero-tagline"><%= fld(primary, 'tagline') %></p>
+        <div class="result-hero-score">
+          <strong><%= ranked[0] ? ranked[0].score : 0 %></strong>
+          <span><%= t('quiz.scoreLabel') %></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="result-block">
+      <h2 class="result-block-title"><%= t('quiz.secondaryType') %></h2>
+      <% if (secondary && secondary.length) { %>
+        <div class="result-chips">
+          <% secondary.forEach(function (type) { %>
+            <span class="result-chip" style="border-color: <%= type.color %>; color: <%= type.color %>;">
+              <%= type.icon %> <%= loc(type, 'name') %>
+            </span>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <p class="result-muted"><%= t('quiz.noSecondary') %></p>
+      <% } %>
+    </section>
+
+    <section class="result-block">
+      <h2 class="result-block-title"><%= t('quiz.allScores') %></h2>
+      <div class="score-list">
+        <% ranked.forEach(function (item) { %>
+          <div class="score-row<%= item.isPrimary ? ' score-row-primary' : '' %>">
+            <span class="score-name"><%= item.icon %> <%= item.name %></span>
+            <span class="score-track"><span class="score-fill" style="width: <%= Math.max(2, item.score) %>%;"></span></span>
+            <span class="score-value"><%= item.score %></span>
+            <span class="score-level <%= levelClass(item.level) %>"><%= levelText(item.level) %></span>
+          </div>
+        <% }); %>
+      </div>
+    </section>
+
+    <section class="result-block">
+      <h2 class="result-block-title"><%= t('quiz.advice') %></h2>
+      <div class="advice-grid">
+        <div class="advice-card">
+          <h3>🪷 <%= t('quiz.traits') %></h3>
+          <ul><% (fld(primary, 'traits') || []).forEach(function (x) { %><li><%= x %></li><% }); %></ul>
+        </div>
+        <div class="advice-card">
+          <h3>🧭 <%= t('quiz.causes') %></h3>
+          <ul><% (fld(primary, 'causes') || []).forEach(function (x) { %><li><%= x %></li><% }); %></ul>
+        </div>
+        <div class="advice-card">
+          <h3>🌿 <%= t('quiz.advice') %></h3>
+          <ul><% (fld(primary, 'advice') || []).forEach(function (x) { %><li><%= x %></li><% }); %></ul>
+        </div>
+        <div class="advice-card advice-card-good">
+          <h3>✅ <%= t('quiz.diet') %></h3>
+          <ul><% (fld(primary, 'diet') || []).forEach(function (x) { %><li><%= x %></li><% }); %></ul>
+        </div>
+        <div class="advice-card advice-card-bad">
+          <h3>🚫 <%= t('quiz.avoid') %></h3>
+          <ul><% (fld(primary, 'avoid') || []).forEach(function (x) { %><li><%= x %></li><% }); %></ul>
+        </div>
+        <div class="advice-card advice-card-path">
+          <h3>🏮 <%= t('quiz.heritagePath') %></h3>
+          <p><%= fld(primary, 'heritagePath') %></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="result-block">
+      <h2 class="result-block-title"><%= t('quiz.recommendTitle') %></h2>
+      <p class="result-muted"><%= t('quiz.recommendLead') %></p>
+      <p class="result-reason"><%= reason %></p>
+
+      <% if (recommendations && recommendations.length) { %>
+        <div class="product-grid">
+          <% recommendations.forEach(function (item) { %>
+            <div class="card">
+              <span class="match-badge"><%= t('quiz.matchScore', { n: item.match }) %></span>
+              <img src="<%= item.product.image %>" class="card-img" alt="<%= item.product.name %>">
+              <div class="card-body">
+                <span class="heritage-badge"><%= item.product.heritage %></span>
+                <h3 class="card-title"><%= item.product.name %></h3>
+                <% if (item.effect) { %><p class="match-effect"><%= item.effect %></p><% } %>
+                <div class="price" data-cny="<%= item.product.price %>">¥<%= item.product.price %></div>
+                <a href="/product/<%= item.product.id %>" class="btn-chinese btn-sm"><%= t('common.viewDetail') %></a>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <p class="result-muted"><%= t('common.noProducts') %></p>
+      <% } %>
+    </section>
+
+    <% if (lifestyle && lifestyle.length) { %>
+      <section class="result-block">
+        <h2 class="result-block-title"><%= t('quiz.lifestyleTitle') %></h2>
+        <p class="result-muted"><%= t('quiz.lifestyleLead') %></p>
+        <div class="product-grid">
+          <% lifestyle.forEach(function (item) { %>
+            <div class="card">
+              <img src="<%= item.product.image %>" class="card-img" alt="<%= item.product.name %>">
+              <div class="card-body">
+                <span class="heritage-badge"><%= item.product.heritage %></span>
+                <h3 class="card-title"><%= item.product.name %></h3>
+                <div class="price" data-cny="<%= item.product.price %>">¥<%= item.product.price %></div>
+                <a href="/product/<%= item.product.id %>" class="btn-chinese btn-sm"><%= t('common.viewDetail') %></a>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+
+    <div class="result-actions">
+      <a href="/quiz/quick" class="btn-chinese"><%= t('quiz.retakeQuick') %></a>
+      <a href="/quiz/full" class="btn-chinese" style="border-color: var(--accent-gold); color: var(--accent-gold);"><%= t('quiz.retakeFull') %></a>
+      <a href="/products" class="btn-chinese"><%= t('quiz.browseAll') %></a>
+    </div>
+
+    <p class="quiz-disclaimer"><%= t('quiz.disclaimer') %></p>
+  </div>
+
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Currency conversion for the result page
+    const exchangeRates = { CNY: 1, USD: 0.14, EUR: 0.13, GBP: 0.11, JPY: 21.5 };
+    const currencySymbols = { CNY: '¥', USD: '$', EUR: '€', GBP: '£', JPY: '¥' };
+    const currentCurrency = localStorage.getItem('preferredCurrency') || 'CNY';
+    document.querySelectorAll('.price').forEach(function (el) {
+      const cny = parseFloat(el.getAttribute('data-cny'));
+      if (!cny) return;
+      let converted = (cny * exchangeRates[currentCurrency]).toFixed(2);
+      if (currentCurrency === 'JPY') converted = Math.round(cny * exchangeRates[currentCurrency]);
+      el.innerHTML = currencySymbols[currentCurrency] + converted;
+    });
+  </script>
+</body>
+</html>

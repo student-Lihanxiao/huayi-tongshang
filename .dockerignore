@@ -1,0 +1,30 @@
+# 依赖：镜像内会重新安装，不需要从上下文传入
+node_modules
+npm-debug.log*
+
+# 版本控制与本地配置
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# 本地产物
+shots
+*.log
+data/runtime
+data/*.tmp
+data/.write-probe
+
+# 开发与文档（运行时不需要，减小构建上下文）
+tools
+test
+*.md
+!README.md
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# 注意：不要忽略 docker-entrypoint.sh —— 镜像启动依赖它。
+# 注意：data/bootstrap/ 必须保留，容器启动时用它播种初始数据。

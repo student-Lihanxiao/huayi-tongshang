@@ -1,0 +1,120 @@
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <%= t('site.name') %>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item">
+          <a class="nav-link" href="/"><%= t('nav.home') %></a>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="productDropdown" role="button" data-bs-toggle="dropdown">
+            <%= t('nav.categories') %>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/products?category=养生"><%= t('nav.category.health') %></a></li>
+            <li><a class="dropdown-item" href="/products?category=非遗"><%= t('nav.category.heritage') %></a></li>
+            <li><a class="dropdown-item" href="/products?category=汉服"><%= t('nav.category.hanfu') %></a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/products"><%= t('nav.category.all') %></a></li>
+          </ul>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="quizDropdown" role="button" data-bs-toggle="dropdown">
+            🧭 <%= t('nav.quiz') %>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/quiz">🧭 <%= t('quiz.pageTitle') %></a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/quiz/full">📋 <%= t('quiz.fullTitle') %></a></li>
+            <li><a class="dropdown-item" href="/quiz/quick">⚡ <%= t('quiz.quickTitle') %></a></li>
+            <% if (session.quizResult) { %>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/quiz/result">🪷 <%= t('quiz.resultTitle') %></a></li>
+            <% } %>
+          </ul>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/articles"><%= t('nav.articles') %></a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/features">📖 <%= t('feat.nav') %></a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/cart">
+            <%= t('nav.cart') %>
+            <% if (session.cart && session.cart.length > 0) { %>
+              <span class="badge"><%= session.cart.length %></span>
+            <% } %>
+          </a>
+        </li>
+
+        <% if (session && session.user) { %>
+          <li class="nav-item">
+            <span class="nav-link" style="color: var(--cinnabar-deep); font-weight: 500;">
+              👤 <%= session.user.username %>
+            </span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout"
+               style="color: var(--cinnabar); font-weight: 500;"
+               onclick="return confirm('<%= t('nav.logoutConfirm') %>');">
+              <%= t('nav.logout') %>
+            </a>
+          </li>
+        <% } else { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/login"><%= t('nav.login') %></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/register"><%= t('nav.register') %></a>
+          </li>
+        <% } %>
+
+        <li class="nav-item dropdown lang-switcher">
+          <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown"
+             aria-label="<%= t('nav.language') %>">
+            🌐 <span class="lang-current"><%= langLabels[lang] %></span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <% langs.forEach(function (code) { %>
+              <li>
+                <a class="dropdown-item lang-item<%= code === lang ? ' active' : '' %>"
+                   href="?lang=<%= code %>" data-lang="<%= code %>">
+                  <span class="lang-flag"><%= code.toUpperCase() %></span>
+                  <%= langLabels[code] %>
+                  <% if (code === lang) { %><span class="lang-check">✓</span><% } %>
+                </a>
+              </li>
+            <% }); %>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Keep the current page and its query string when switching language; only replace lang
+  (function () {
+    document.querySelectorAll('.lang-item').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', link.getAttribute('data-lang'));
+        window.location.href = url.toString();
+      });
+    });
+  })();
+</script>

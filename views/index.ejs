@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('site.name') %> - <%= t('site.tagline') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-seal">華</div>
+      <h1 class="hero-brand"><%= t('site.name') %></h1>
+      <p class="hero-title"><%= t('home.heroTitle') %></p>
+      <p class="hero-sub"><%= t('site.subtitle') %></p>
+      <div class="hero-rule"></div>
+      <div class="hero-actions">
+        <a href="/products" class="btn-chinese btn-lg">🛍️ <%= t('home.exploreBtn') %></a>
+        <a href="/quiz" class="btn-chinese btn-lg gold">🧭 <%= t('quiz.homeEntryBtn') %></a>
+        <a href="/articles" class="btn-chinese btn-lg">📖 <%= t('home.articlesBtn') %></a>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="quiz-cta">
+      <div class="quiz-cta-main">
+        <span class="quiz-cta-icon">🧭</span>
+        <div>
+          <h2><%= t('quiz.homeEntryTitle') %></h2>
+          <p><%= t('quiz.homeEntryLead') %></p>
+          <span class="quiz-cta-hint"><%= t('quiz.homeEntryHint') %></span>
+        </div>
+      </div>
+      <div class="quiz-cta-actions">
+        <a href="/quiz/full" class="btn-chinese btn-lg"><%= t('quiz.startFull') %></a>
+        <a href="/quiz/quick" class="btn-chinese btn-lg gold"><%= t('quiz.startQuick') %></a>
+      </div>
+    </div>
+
+    <% if (lastQuiz) { %>
+      <div class="quiz-cta-return">
+        <span>🪷 <%= t('quiz.resultTitle') %></span>
+        <a href="/quiz/result" class="btn-chinese btn-sm"><%= t('common.view') %></a>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="container">
+    <div class="solar-term-card">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <div class="solar-term-name"><%= solarTerm.term %></div>
+          <div class="solar-term-date"><%= solarTerm.date %></div>
+          <div class="health-tip-box">
+            <h5><%= t('home.todayWellness') %></h5>
+            <p><%= solarTerm.healthTips %></p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="solar-mini">
+                <h6><%= t('home.nextTerm') %></h6>
+                <p class="solar-mini-value"><%= solarTerm.nextTerm %></p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="solar-mini">
+                <h6><%= t('home.todayPick') %></h6>
+                <p class="solar-mini-name"><%= todayRecommend ? todayRecommend.name : '' %></p>
+                <a href="/product/<%= todayRecommend ? todayRecommend.id : 1 %>" class="btn-chinese btn-sm"><%= t('common.view') %></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2 class="page-title"><%= t('home.valuesTitle') %></h2>
+    <div class="value-grid">
+      <% ['1', '2', '3', '4'].forEach(function (n) { %>
+        <div class="value-card">
+          <span class="value-num"><%= n %></span>
+          <h4><%= t('home.value' + n + 'Title') %></h4>
+          <p><%= t('home.value' + n + 'Text') %></p>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2 class="page-title"><%= t('home.healthTitle') %></h2>
+    <div class="product-grid">
+      <% (healthProducts || []).forEach(function (product) { %>
+      <div class="card">
+        <img src="<%= product.image %>" class="card-img" alt="<%= product.name %>" loading="lazy">
+        <div class="card-body">
+          <span class="heritage-badge"><%= product.heritage %></span>
+          <h3 class="card-title"><%= product.name %></h3>
+          <div class="price" data-cny="<%= product.price || 0 %>">¥<%= product.price || 0 %></div>
+          <a href="/product/<%= product.id %>" class="btn-chinese btn-sm"><%= t('common.viewDetail') %></a>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <div class="btn-more">
+      <a href="/products?category=养生"><%= t('home.moreHealth') %></a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2 class="page-title"><%= t('home.heritageTitle') %></h2>
+    <div class="product-grid">
+      <% (heritageProducts || []).forEach(function (product) { %>
+      <div class="card">
+        <img src="<%= product.image %>" class="card-img" alt="<%= product.name %>" loading="lazy">
+        <div class="card-body">
+          <span class="heritage-badge"><%= product.heritage %></span>
+          <h3 class="card-title"><%= product.name %></h3>
+          <div class="price" data-cny="<%= product.price || 0 %>">¥<%= product.price || 0 %></div>
+          <a href="/product/<%= product.id %>" class="btn-chinese btn-sm"><%= t('common.viewDetail') %></a>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <div class="btn-more">
+      <a href="/products?category=非遗"><%= t('home.moreHeritage') %></a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2 class="page-title"><%= t('home.hanfuTitle') %></h2>
+    <div class="product-grid">
+      <% (hanfuProducts || []).forEach(function (product) { %>
+      <div class="card">
+        <img src="<%= product.image %>" class="card-img" alt="<%= product.name %>" loading="lazy">
+        <div class="card-body">
+          <span class="heritage-badge"><%= product.heritage %></span>
+          <h3 class="card-title"><%= product.name %></h3>
+          <div class="price" data-cny="<%= product.price || 0 %>">¥<%= product.price || 0 %></div>
+          <a href="/product/<%= product.id %>" class="btn-chinese btn-sm"><%= t('common.viewDetail') %></a>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <div class="btn-more">
+      <a href="/products?category=汉服"><%= t('home.moreHanfu') %></a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2 class="page-title"><%= t('home.articlesTitle') %></h2>
+    <div class="article-grid">
+      <% (articles || []).forEach(function (article) { %>
+      <div class="article-card">
+        <h3><%= article.title %></h3>
+        <p><%= article.content ? article.content.substring(0, 60) : t('common.noContent') %>...</p>
+        <a href="/article/<%= article.id %>" class="article-link"><%= t('common.readMore') %></a>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+  <%- include('partials/entry-quiz', { steps: entrySteps, showEntryQuiz: showEntryQuiz }) %>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Currency conversion
+    const exchangeRates = { CNY: 1, USD: 0.14, EUR: 0.13, GBP: 0.11, JPY: 21.5 };
+    const currencySymbols = { CNY: '¥', USD: '$', EUR: '€', GBP: '£', JPY: '¥' };
+    let currentCurrency = localStorage.getItem('preferredCurrency') || 'CNY';
+
+    function convertPrices() {
+      document.querySelectorAll('.price').forEach(el => {
+        let cnyPrice = parseFloat(el.getAttribute('data-cny'));
+        if (!cnyPrice) {
+          const match = el.textContent.match(/[0-9.]+/);
+          if (match) {
+            cnyPrice = parseFloat(match[0]);
+            el.setAttribute('data-cny', cnyPrice);
+          }
+        }
+        if (cnyPrice) {
+          let converted = (cnyPrice * exchangeRates[currentCurrency]).toFixed(2);
+          if (currentCurrency === 'JPY') converted = Math.round(cnyPrice * exchangeRates[currentCurrency]);
+          el.innerHTML = currencySymbols[currentCurrency] + converted;
+        }
+      });
+    }
+    setTimeout(convertPrices, 300);
+  </script>
+</body>
+</html>

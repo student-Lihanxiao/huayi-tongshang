@@ -1,0 +1,40 @@
+# ---------- 依赖与构建产物 ----------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- 环境变量（绝不提交密钥）----------
+.env
+.env.local
+.env.*.local
+
+# ---------- 运行期生成的数据 ----------
+# 用户、订单是运行期数据，不进版本库。
+# 初始模板放在 data/bootstrap/（需提交），首次运行会复制到 data/runtime/。
+data/runtime/
+!data/bootstrap/
+
+# ---------- 部署与运维产物 ----------
+shots/
+*.log
+logs/
+backups/
+.nyc_output/
+coverage/
+
+# ---------- 编辑器与系统 ----------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 临时脚本 ----------
+tmp/
+*.local.md
+
+# 注：data/locales/、data/products.json、data/articles.json、
+#     data/constitution.json、data/quiz-questions.json 是站点的内容资产，
+#     必须提交，否则部署后没有商品和界面文案。

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <title><%= t('orderSuccess.title') %> - <%= t('site.name') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container" style="max-width: 600px; margin: 80px auto;">
+    <div style="background: white; padding: 4rem; border-radius: 40px; box-shadow: 0 20px 50px var(--shadow-green); border: 1px solid var(--border-green); text-align: center;">
+      <div style="font-size: 5rem; margin-bottom: 20px;">✅</div>
+      <h2 style="color: var(--primary-green); font-family: 'KaiTi'; margin-bottom: 20px;"><%= t('orderSuccess.submitted') %></h2>
+      <p style="color: var(--text-light); margin-bottom: 30px;"><%= t('orderSuccess.thanksShort') %></p>
+
+      <div style="background: var(--light-green); padding: 20px; border-radius: 20px; margin: 30px 0; text-align: left;">
+        <p style="margin-bottom: 10px;"><%= t('orderSuccess.orderNoLabel') %><strong><%= order.id %></strong></p>
+        <p style="margin-bottom: 10px;"><%= t('orderSuccess.amountLabel') %><strong style="color: var(--accent-gold);">¥<%= order.total %></strong></p>
+        <p style="margin-bottom: 0;"><%= t('orderSuccess.status') %>：<strong><%= statusText %></strong></p>
+        <% if (items && items.length) { %>
+          <hr style="border-color: var(--border-green);">
+          <% items.forEach(function (item) { %>
+            <p style="margin-bottom: 6px; font-size: 0.9rem; color: var(--text-light);">
+              <%= item.name %> × <%= item.quantity %>
+            </p>
+          <% }); %>
+        <% } %>
+      </div>
+
+      <div class="d-flex gap-3 justify-content-center">
+        <a href="/" class="btn btn-chinese"><%= t('orderSuccess.backHome') %></a>
+        <a href="/quiz" class="btn btn-chinese" style="border-color: var(--accent-gold); color: var(--accent-gold);">🧭 <%= t('quiz.navTitle') %></a>
+        <a href="/products" class="btn btn-chinese"><%= t('common.continueShopping') %></a>
+      </div>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

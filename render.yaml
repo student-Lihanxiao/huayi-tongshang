@@ -1,0 +1,46 @@
+# ============================================================
+#  Render 蓝图（Infrastructure as Code）
+#  用法：Render 控制台 → New → Blueprint → 选中本仓库
+#        Render 会自动读这个文件，把服务、磁盘、环境变量一次配好。
+#
+#  创建后唯一需要手工改的是 PUBLIC_URL：
+#  先部署一次拿到分配到的域名，再回填并重新部署。
+# ============================================================
+
+services:
+  - type: web
+    name: huayi-tongshang
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter            # 持久磁盘需要付费实例（starter）；免费版见 DEPLOY.md 说明
+    region: singapore        # 亚洲节点，国内访问相对快；也可改 oregon / frankfurt
+    healthCheckPath: /healthz
+    autoDeploy: true         # 推送代码后自动重新部署
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # 会话签名密钥：由 Render 自动生成随机值，不要手填
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # 数据目录必须与下方 disk.mountPath 完全一致
+      - key: DATA_DIR
+        value: /data
+
+      # Render 自带 HTTPS，因此会话 cookie 启用 secure
+      - key: COOKIE_SECURE
+        value: "true"
+
+      # ★ 部署完成后把这里改成 Render 分配的域名（或你自己的域名）
+      #   用途：canonical 链接、og:url、sitemap 里的绝对地址
+      - key: PUBLIC_URL
+        value: https://huayi-tongshang.onrender.com
+
+      # 注意：不要在这里设置 PORT。Render 会注入自己的 PORT，
+      # 服务端已按 process.env.PORT 监听，写死会导致健康检查失败。
+
+    disk:
+      name: huayi-data
+      mountPath: /data       # 持久化用户与订单数据，重新部署不丢失
+      sizeGB: 1

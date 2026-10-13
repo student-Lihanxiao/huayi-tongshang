@@ -1,0 +1,75 @@
+<%
+  /* ------------------------------------------------------------
+     统一的 SEO / 社交分享头部元信息
+
+     注意：EJS 的 include 数据与 res.locals 处于同一作用域，
+     因此这里整体包一层 IIFE。否则声明 const ogType 之类的名字时，
+     会与 res.locals 上的同名变量形成暂时性死区
+     （报错：Cannot access 'ogType' before initialization）。
+
+     可用覆盖项（在 render 时传入，均有默认值）：
+       metaTitle / metaDescription / metaImage / metaRobots / ogType / canonicalPath
+     ------------------------------------------------------------ */
+%>
+<% (function () {
+  const T = typeof t === 'function' ? t : function () { return ''; };
+  const L = typeof langs !== 'undefined' && langs ? langs : ['zh'];
+
+  // 用 typeof 探测可选 local，避免直接引用未定义变量
+  const givenTitle = typeof metaTitle !== 'undefined' ? metaTitle : null;
+  const givenDesc = typeof metaDescription !== 'undefined' ? metaDescription : null;
+  const givenImage = typeof metaImage !== 'undefined' ? metaImage : null;
+  const givenRobots = typeof metaRobots !== 'undefined' ? metaRobots : null;
+  const givenType = typeof ogType !== 'undefined' ? ogType : null;
+  const givenPath = typeof canonicalPath !== 'undefined' ? canonicalPath : null;
+  const givenBase = typeof siteUrl !== 'undefined' ? siteUrl : null;
+
+  const brandName = T('site.name');
+  const pageTitle = givenTitle || brandName;
+  const fullTitle = pageTitle.indexOf(brandName) === 0 ? pageTitle : pageTitle + ' - ' + brandName;
+  const description = givenDesc || T('site.description');
+  const robotsValue = givenRobots || 'index, follow';
+  const typeValue = givenType || 'website';
+
+  const base = givenBase || '';
+  // 规范链接只取路径部分（去掉 ?lang= 等查询串），
+  // 否则四个语言各有一个 canonical，反而会被判成不同页面。
+  const pathOnly = givenPath || (typeof req !== 'undefined' && req.originalUrl
+    ? req.originalUrl.split('?')[0]
+    : '/');
+  const canonical = base + pathOnly;
+  const shareImage = base + (givenImage || '/images/og-cover.png');
+  const withLang = (code) => base + pathOnly + '?lang=' + code;
+%>
+  <!-- ===== SEO ===== -->
+  <meta name="description" content="<%= description %>">
+  <meta name="robots" content="<%= robotsValue %>">
+  <link rel="canonical" href="<%= canonical %>">
+
+  <!-- Cross-language links so the four locale versions are not treated as duplicate content -->
+  <% L.forEach(function (code) { %>
+  <link rel="alternate" hreflang="<%= code === 'zh' ? 'zh-CN' : code %>" href="<%= withLang(code) %>">
+  <% }); %>
+  <link rel="alternate" hreflang="x-default" href="<%= canonical %>">
+
+  <!-- ===== Site icons ===== -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#a8321f">
+
+  <!-- ===== Social sharing card ===== -->
+  <meta property="og:type" content="<%= typeValue %>">
+  <meta property="og:site_name" content="<%= brandName %>">
+  <meta property="og:title" content="<%= fullTitle %>">
+  <meta property="og:description" content="<%= description %>">
+  <meta property="og:url" content="<%= canonical %>">
+  <meta property="og:image" content="<%= shareImage %>">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="<%= (typeof htmlLang !== 'undefined' ? htmlLang : 'zh-CN').replace('-', '_') %>">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= fullTitle %>">
+  <meta name="twitter:description" content="<%= description %>">
+  <meta name="twitter:image" content="<%= shareImage %>">
+<% })(); %>

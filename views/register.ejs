@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('register.title') %> - <%= t('site.name') %></title>
+  <%- include('partials/head-meta') %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container" style="max-width: 500px; margin: 80px auto;">
+    <div style="background: white; padding: 3rem; border-radius: 30px; box-shadow: 0 20px 40px var(--shadow-green); border: 1px solid var(--border-green);">
+      <h2 class="text-center" style="color: var(--primary-green); font-family: 'KaiTi'; margin-bottom: 30px;"><%= t('register.title') %></h2>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="auth-error"><%= error %></div>
+      <% } %>
+
+      <form action="/register" method="post" onsubmit="return checkPassword()">
+        <input type="hidden" name="redirect" value="<%= redirect %>">
+
+        <div class="mb-4">
+          <label class="form-label"><%= t('register.username') %></label>
+          <input type="text" name="username" class="form-control" required style="border: 1px solid var(--border-green); border-radius: 12px; padding: 12px;">
+        </div>
+        <div class="mb-4">
+          <label class="form-label"><%= t('register.password') %></label>
+          <input type="password" name="password" id="regPassword" class="form-control" required minlength="6" style="border: 1px solid var(--border-green); border-radius: 12px; padding: 12px;">
+          <small class="text-muted"><%= t('register.passwordHint') %></small>
+        </div>
+        <div class="mb-4">
+          <label class="form-label"><%= t('register.confirmPassword') %></label>
+          <input type="password" name="confirm" id="regConfirm" class="form-control" required style="border: 1px solid var(--border-green); border-radius: 12px; padding: 12px;">
+        </div>
+        <p class="auth-error" id="pwMismatch" hidden><%= t('register.mismatch') %></p>
+        <button type="submit" class="btn btn-chinese w-100 py-3" style="font-size: 1.1rem;"><%= t('register.submit') %></button>
+      </form>
+
+      <div class="text-center mt-4">
+        <span class="text-muted"><%= t('register.hasAccount') %></span>
+        <a href="/login?redirect=<%= redirect %>" style="color: var(--primary-green); text-decoration: none;"><%= t('register.goLogin') %></a>
+      </div>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function checkPassword() {
+      var p = document.getElementById('regPassword').value;
+      var c = document.getElementById('regConfirm').value;
+      var warn = document.getElementById('pwMismatch');
+      if (p !== c) { warn.hidden = false; return false; }
+      warn.hidden = true;
+      return true;
+    }
+  </script>
+</body>
+</html>

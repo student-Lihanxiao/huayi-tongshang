@@ -1,0 +1,135 @@
+<%
+  /* Assessment form
+     locals: mode ('full' | 'quick'), items, options, typeName (可选)
+     注意：EJS 的 include 数据与该 partial 处于同一作用域，
+     因此整体包一层 IIFE，避免与外部同名变量产生暂时性死区。 */
+%>
+<% (function () {
+  const isFull = mode === 'full';
+  const list = items || [];
+  const optionList = options || [];
+  const localize = (obj) => (obj && (obj[lang] || obj.zh)) || '';
+  const names = typeof typeNames !== 'undefined' && typeNames ? typeNames : {};
+  const showTag = Object.keys(names).length > 0;
+%>
+<form id="quizForm" method="post" action="/quiz/submit" novalidate>
+  <input type="hidden" name="mode" value="<%= mode %>">
+
+  <div class="quiz-progress">
+    <div class="quiz-progress-bar"><span id="quizProgressFill"></span></div>
+    <div class="quiz-progress-text" id="quizProgressText">
+      <%= t('quiz.question', { n: 1, total: list.length }) %>
+    </div>
+  </div>
+
+  <% list.forEach(function (item, index) { %>
+    <div class="quiz-step<%= index === 0 ? ' active' : '' %>" data-index="<%= index %>" data-qid="<%= item.id %>">
+      <% if (showTag && item.type) { %>
+        <div class="quiz-step-tag"><%= names[item.type] || '' %></div>
+      <% } %>
+      <h3 class="quiz-question"><%= localize(item) %></h3>
+
+      <% if (isFull) { %>
+        <div class="quiz-scale">
+          <% optionList.forEach(function (opt) { %>
+            <label class="quiz-scale-option">
+              <input type="radio" name="answers[<%= item.id %>]" value="<%= opt.value %>">
+              <span class="quiz-scale-value"><%= opt.value %></span>
+              <span class="quiz-scale-label"><%= localize(opt) %></span>
+            </label>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="quiz-options">
+          <% (item.answers || []).forEach(function (opt) { %>
+            <label class="quiz-option">
+              <input type="radio" name="answers[<%= item.id %>]" value="<%= opt.value %>">
+              <span class="quiz-option-text"><%= localize(opt) %></span>
+            </label>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <p class="quiz-warning" hidden><%= t('quiz.pleaseAnswer') %></p>
+    </div>
+  <% }); %>
+
+  <div class="quiz-nav">
+    <button type="button" class="btn-chinese quiz-prev" id="quizPrev" disabled><%= t('quiz.prev') %></button>
+    <button type="button" class="btn-chinese quiz-next" id="quizNext"><%= t('quiz.next') %></button>
+    <button type="submit" class="btn-chinese quiz-submit" id="quizSubmit"><%= t('quiz.submit') %></button>
+  </div>
+</form>
+
+<script>
+(function () {
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.quiz-step'));
+  var total = steps.length;
+  var current = 0;
+
+  var fill = document.getElementById('quizProgressFill');
+  var text = document.getElementById('quizProgressText');
+  var prevBtn = document.getElementById('quizPrev');
+  var nextBtn = document.getElementById('quizNext');
+  var submitBtn = document.getElementById('quizSubmit');
+
+  // Progress label template; {n} and {total} are substituted on the client
+  var PROGRESS_TEMPLATE = <%- JSON.stringify(t('quiz.question', { n: '__N__', total: '__TOTAL__' })) %>;
+
+  function render() {
+    steps.forEach(function (step, i) {
+      step.classList.toggle('active', i === current);
+      step.querySelector('.quiz-warning').hidden = true;
+    });
+
+    var pct = ((current + 1) / total) * 100;
+    fill.style.width = pct + '%';
+    text.textContent = PROGRESS_TEMPLATE
+      .replace('__N__', current + 1)
+      .replace('__TOTAL__', total);
+
+    prevBtn.disabled = current === 0;
+    nextBtn.hidden = current === total - 1;
+    submitBtn.hidden = current !== total - 1;
+  }
+
+  function answered(step) {
+    return !!step.querySelector('input[type=radio]:checked');
+  }
+
+  // Auto-advance after selecting (except on the last question)
+  steps.forEach(function (step) {
+    step.addEventListener('change', function (e) {
+      if (e.target.type !== 'radio') return;
+      step.querySelector('.quiz-warning').hidden = true;
+      step.querySelectorAll('.quiz-scale-option, .quiz-option').forEach(function (el) {
+        el.classList.remove('picked');
+      });
+      var label = e.target.closest('.quiz-scale-option, .quiz-option');
+      if (label) label.classList.add('picked');
+
+      if (current < total - 1) {
+        setTimeout(function () {
+          if (answered(step)) { current += 1; render(); }
+        }, 220);
+      }
+    });
+  });
+
+  nextBtn.addEventListener('click', function () {
+    var step = steps[current];
+    if (!answered(step)) {
+      step.querySelector('.quiz-warning').hidden = false;
+      return;
+    }
+    if (current < total - 1) { current += 1; render(); }
+  });
+
+  prevBtn.addEventListener('click', function () {
+    if (current > 0) { current -= 1; render(); }
+  });
+
+  render();
+})();
+</script>
+<% })(); %>
