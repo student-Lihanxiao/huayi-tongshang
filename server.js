@@ -48,6 +48,26 @@ if (IS_PROD && !process.env.SESSION_SECRET) {
 // 但如果是现场用 http://localhost 演示，必须保持 false，否则登录/购物车会静默失效。
 const COOKIE_SECURE = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
 
+/**
+ * 安全自检：secure cookie 与访问协议不匹配时给出明确警告。
+ *
+ * 为什么需要：若 COOKIE_SECURE=true 但用户通过 http:// 访问，
+ * 浏览器会拒收会话 cookie。表现出来是"注册/登录好像成功了，
+ * 但刷新就退出、购物车永远是空的"—— 现象很迷惑，极易误判成业务 bug。
+ * 云平台走 HTTPS 时 PUBLIC_URL 以 https:// 开头，据此可以自动识别。
+ */
+function checkCookieSecureConfig() {
+  if (!COOKIE_SECURE) return;
+  if (PUBLIC_URL && !PUBLIC_URL.startsWith('https://')) {
+    console.warn('⚠️  COOKIE_SECURE=true，但 PUBLIC_URL 是 http:// —— 会话 cookie 会被浏览器拒收。');
+    console.warn('    表现为：登录后刷新即退出、购物车始终为空。');
+    console.warn('    若确实没有 HTTPS，请把 COOKIE_SECURE 设为 false。');
+  } else if (!PUBLIC_URL) {
+    console.warn('ℹ️  COOKIE_SECURE=true（将只接受 HTTPS 访问）。若用 http://localhost 调试会登录失败，');
+    console.warn('    本地调试请设 COOKIE_SECURE=false。');
+  }
+}
+
 // 可选依赖：缺失时自动降级，不让部署因它们失败
 let compression = null;
 let helmet = null;
@@ -1188,6 +1208,8 @@ app.listen(PORT, () => {
   console.log(`🔗 对外地址：${PUBLIC_URL || '(未设置 PUBLIC_URL，将按请求推断)'}`);
   console.log(`📦 gzip 压缩：${compression ? '已启用' : '未安装 compression，已跳过'}`);
   console.log(`🛡️  安全响应头：${helmet ? '已启用' : '未安装 helmet，已跳过'}`);
+  console.log(`🍪 会话 cookie：secure=${COOKIE_SECURE}`);
+  checkCookieSecureConfig();
   console.log(`❤️  健康检查：/healthz`);
 });
 

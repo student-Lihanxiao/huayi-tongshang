@@ -35,6 +35,15 @@ desktop.ini
 tmp/
 *.local.md
 
+# ---------- 本地演示用的工具（体积大 / 平台相关，不进版本库）----------
+# cloudflared 是可执行文件（约 53MB），各平台版本不同，应由使用者自行下载：
+#   https://github.com/cloudflare/cloudflared/releases/latest
+cloudflared.exe
+cloudflared
+config.yml
+config.yaml
+*.trycloudflare.com
+
 # 注：data/locales/、data/products.json、data/articles.json、
 #     data/constitution.json、data/quiz-questions.json 是站点的内容资产，
 #     必须提交，否则部署后没有商品和界面文案。

@@ -1,9 +1,17 @@
 # ============================================================
-#  Render 蓝图（Infrastructure as Code）
-#  用法：Render 控制台 → New → Blueprint → 选中本仓库
-#        Render 会自动读这个文件，把服务、磁盘、环境变量一次配好。
+#  Render 蓝图（免费版）
+#  用法：Render 控制台 → New + → Blueprint → 选中本仓库
+#        Render 会自动读这个文件，把服务与环境变量一次配好。
 #
-#  创建后唯一需要手工改的是 PUBLIC_URL：
+#  ⚠️ 免费版的重要限制（务必了解）
+#  1. 不能挂持久磁盘 —— 用户注册与订单数据保存在容器临时文件系统里，
+#     一旦重新部署 / 休眠唤醒 / 实例迁移，注册的账号和订单会清零。
+#     演示前请先自己注册并跑通流程，避免答辩时评委看到空数据。
+#  2. 闲置 15 分钟会休眠，下次访问冷启动需 30-60 秒。
+#     ★ 答辩/评审前 10 分钟先访问一次唤醒它。
+#  3. 每月有免费额度（750 小时），个人演示完全够用。
+#
+#  创建后需要手工改的只有 PUBLIC_URL：
 #  先部署一次拿到分配到的域名，再回填并重新部署。
 # ============================================================
 
@@ -12,7 +20,7 @@ services:
     name: huayi-tongshang
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter            # 持久磁盘需要付费实例（starter）；免费版见 DEPLOY.md 说明
+    plan: free               # 免费实例：无持久磁盘、闲置会休眠
     region: singapore        # 亚洲节点，国内访问相对快；也可改 oregon / frankfurt
     healthCheckPath: /healthz
     autoDeploy: true         # 推送代码后自动重新部署
@@ -24,23 +32,28 @@ services:
       - key: SESSION_SECRET
         generateValue: true
 
-      # 数据目录必须与下方 disk.mountPath 完全一致
-      - key: DATA_DIR
-        value: /data
-
       # Render 自带 HTTPS，因此会话 cookie 启用 secure
       - key: COOKIE_SECURE
         value: "true"
 
-      # ★ 部署完成后把这里改成 Render 分配的域名（或你自己的域名）
+      # ★ 部署完成后把这里改成 Render 分配的真实域名
       #   用途：canonical 链接、og:url、sitemap 里的绝对地址
       - key: PUBLIC_URL
         value: https://huayi-tongshang.onrender.com
 
-      # 注意：不要在这里设置 PORT。Render 会注入自己的 PORT，
+      # 注意：不要设置 PORT。Render 会注入自己的 PORT，
       # 服务端已按 process.env.PORT 监听，写死会导致健康检查失败。
+      #
+      # 注意：免费版不要设置 DATA_DIR。
+      # 容器内默认写到 /app/data/runtime（临时文件系统，重建即清空）。
 
-    disk:
-      name: huayi-data
-      mountPath: /data       # 持久化用户与订单数据，重新部署不丢失
-      sizeGB: 1
+    # 免费版不支持磁盘，因此这里没有 disk 配置。
+    # 若将来升级到付费实例，加上下面这段即可让数据持久化：
+    #
+    # disk:
+    #   name: huayi-data
+    #   mountPath: /data
+    #   sizeGB: 1
+    #
+    # 同时把上面的环境变量 DATA_DIR 设为 /data，
+    # 并确保 docker-entrypoint.sh 已修正该目录属主（已内置处理）。
