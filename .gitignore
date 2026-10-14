@@ -17,6 +17,8 @@ data/runtime/
 
 # ---------- 部署与运维产物 ----------
 shots/
+docs/screenshots/
+*.png.tmp
 *.log
 logs/
 backups/
