@@ -103,67 +103,132 @@ Write-Host ''
 #   - 输出仍然是实时的
 #   - 用 .NET 读取避免中文日志被 ANSI 解码
 $logFile = Join-Path $env:TEMP ("huayi-tunnel-{0}.log" -f (Get-Date -Format 'yyyyMMddHHmmss'))
-$proc = Start-Process -FilePath $cf `
-    -ArgumentList 'tunnel', '--url', 'http://localhost:3001' `
-    -NoNewWindow -PassThru `
-    -RedirectStandardOutput $logFile `
-    -RedirectStandardError "$logFile.err"
 
-$shown = 0
-try {
-    while (-not $proc.HasExited) {
-        Start-Sleep -Milliseconds 400
-        # 先读 stderr（cloudflared 的日志都在这里），再读 stdout
-        foreach ($f in @("$logFile.err", $logFile)) {
-            if (-not (Test-Path $f)) { continue }
+# 协议选择：默认 QUIC(UDP)，但国内网络经代理时 UDP 常被干扰，
+# 表现为隧道反复超时重连（日志出现 datagram manager error / timeout），
+# 期间访问者会看到 Cloudflare Error 1033。改用 HTTP/2(TCP) 更稳。
+# 如你的网络 UDP 正常、想追求更低延迟，可把 $useHttp2 改成 $false。
+$useHttp2 = $true
+$cfArgs = @('tunnel', '--url', 'http://localhost:3001')
+if ($useHttp2) { $cfArgs += @('--protocol', 'http2') }
 
-            # 关键：cloudflared 正在写这个文件，必须用 FileShare.ReadWrite 打开。
-            # 否则 ReadAllLines 会独占文件触发 IOException，
-            # 异常会让本循环直接退出，隧道被立刻关闭。
-            $text = ''
-            try {
-                $fs = [System.IO.File]::Open($f,
-                        [System.IO.FileMode]::Open,
-                        [System.IO.FileAccess]::Read,
-                        [System.IO.FileShare]::ReadWrite)
-                try {
-                    $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
-                    $text = $sr.ReadToEnd()
-                    $sr.Close()
-                } finally {
-                    $fs.Close()
-                }
-            } catch {
-                continue   # 本次读不到就跳过，下一轮再试
-            }
+Write-Host ("      隧道协议: {0}" -f $(if ($useHttp2) { 'HTTP/2 (TCP, 抗干扰)' } else { 'QUIC (UDP, 低延迟)' })) -ForegroundColor DarkGray
+Write-Host ''
 
-            if (-not $text) { continue }
-            $lines = $text -split "`r?`n"
-            for ($i = $shown; $i -lt $lines.Count; $i++) {
-                $line = $lines[$i]
-                if ([string]::IsNullOrWhiteSpace($line)) { continue }
-                # 只高亮关键行，其余保持普通颜色
-                if ($line -match 'trycloudflare\.com') {
-                    Write-Host $line -ForegroundColor Green
-                } elseif ($line -match '\bERR\b|failed|error') {
-                    Write-Host $line -ForegroundColor DarkYellow
-                } else {
-                    Write-Host $line -ForegroundColor DarkGray
-                }
-            }
-            $shown = $lines.Count
+# 启动一次 cloudflared，并把日志按行回显到控制台
+function Start-Tunnel {
+    param([string]$StdOut, [string]$StdErr)
+
+    foreach ($f in @($StdOut, $StdErr)) {
+        if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+    }
+
+    $p = Start-Process -FilePath $cf `
+        -ArgumentList $cfArgs `
+        -NoNewWindow -PassThru `
+        -RedirectStandardOutput $StdOut `
+        -RedirectStandardError $StdErr
+
+    return $p
+}
+
+# 读取日志新增内容（必须共享读，否则与 cloudflared 写冲突）
+function Read-NewLines {
+    param([string]$File, [int]$From)
+
+    if (-not (Test-Path $File)) { return @() }
+
+    $text = ''
+    try {
+        $fs = [System.IO.File]::Open($File,
+                [System.IO.FileMode]::Open,
+                [System.IO.FileAccess]::Read,
+                [System.IO.FileShare]::ReadWrite)
+        try {
+            $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
+            $text = $sr.ReadToEnd()
+            $sr.Close()
+        } finally {
+            $fs.Close()
         }
+    } catch {
+        return @()
+    }
+
+    if (-not $text) { return @() }
+    $all = $text -split "`r?`n"
+    if ($From -ge $all.Count) { return @() }
+    return $all[$From..($all.Count - 1)]
+}
+
+# ---------------------------------------------------------------- 主循环（含自动重连）
+# 网络中断、代理切换、系统休眠都可能导致隧道进程退出。
+# 这里检测到退出后自动重建，避免你半夜回来发现链接失效。
+$restarts = 0
+$maxRestarts = 20
+
+try {
+    while ($true) {
+        $proc = Start-Tunnel -StdOut $logFile -StdErr "$logFile.err"
+        $outShown = 0
+        $errShown = 0
+
+        if ($restarts -gt 0) {
+            Write-Host ''
+            Write-Host ("  ↻ 已自动重连隧道（第 {0} 次），新链接稍后出现在下方" -f $restarts) -ForegroundColor Yellow
+            Write-Host ''
+        }
+
+        while (-not $proc.HasExited) {
+            Start-Sleep -Milliseconds 400
+
+            # 先回显 stderr（cloudflared 的日志都在这里），再回显 stdout
+            $newErr = Read-NewLines -File "$logFile.err" -From $errShown
+            if ($newErr.Count) {
+                $errShown += $newErr.Count
+                foreach ($line in $newErr) {
+                    if ([string]::IsNullOrWhiteSpace($line)) { continue }
+                    if ($line -match 'trycloudflare\.com') {
+                        Write-Host $line -ForegroundColor Green
+                    } elseif ($line -match '\bERR\b|failed|error') {
+                        Write-Host $line -ForegroundColor DarkYellow
+                    } else {
+                        Write-Host $line -ForegroundColor DarkGray
+                    }
+                }
+            }
+
+            $newOut = Read-NewLines -File $logFile -From $outShown
+            if ($newOut.Count) {
+                $outShown += $newOut.Count
+                foreach ($line in $newOut) {
+                    if (-not [string]::IsNullOrWhiteSpace($line)) {
+                        Write-Host $line -ForegroundColor DarkGray
+                    }
+                }
+            }
+        }
+
+        # 进程已退出
+        $restarts++
+        if ($restarts -gt $maxRestarts) {
+            Write-Host ''
+            Write-Host ("  ✗ 隧道已连续重建 {0} 次仍失败，停止重试。" -f $maxRestarts) -ForegroundColor Red
+            Write-Host '    请检查网络或代理设置，然后重新运行本脚本。' -ForegroundColor DarkGray
+            break
+        }
+
+        Write-Host ''
+        Write-Host '  ⚠️ 隧道连接已断开，4 秒后自动重连...' -ForegroundColor Yellow
+        Start-Sleep -Seconds 4
     }
 } finally {
-    # 脚本被 Ctrl+C 或窗口关闭时，顺手结束 cloudflared，避免留下孤儿进程
+    # 脚本被 Ctrl+C 或窗口关闭时结束隧道，避免留下孤儿进程
     if ($proc -and -not $proc.HasExited) {
         try { $proc.Kill() } catch { }
     }
     Remove-Item $logFile, "$logFile.err" -ErrorAction SilentlyContinue
 }
-
-Write-Host ''
-Write-Host '隧道已结束。若要重新获取公网链接，再次运行本脚本即可。' -ForegroundColor Yellow
 
 Write-Host ''
 Write-Host '隧道已结束。若要重新获取公网链接，再次运行本脚本即可。' -ForegroundColor Yellow
